@@ -1,8 +1,11 @@
 package gestaoeventos.api.rest.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -13,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,8 +23,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import gestaoeventos.api.rest.model.Evento;
-import gestaoeventos.api.rest.repository.EventoRepository;
+import gestaoeventos.api.rest.dto.EventoRequestDTO;
+import gestaoeventos.api.rest.dto.EventoResponseDTO;
+import gestaoeventos.api.rest.service.EventoService;
 
 @ExtendWith(MockitoExtension.class)
 public class EventoControllerUnitTest {
@@ -31,81 +34,106 @@ public class EventoControllerUnitTest {
     private EventoController eventoController;
 
     @Mock
-    private EventoRepository eventoRepository;
-
-    private Evento eventoMock;
-
+    private EventoService eventoService;
+    
+    private EventoRequestDTO eventoRequestDTO;
+    private EventoResponseDTO eventoResponseDTO;
+    
+    
+    
     @BeforeEach
     public void setup() {
-        // Inicializa o controller com o mock do repositório
-        eventoController = new EventoController(eventoRepository);
+    	// Cria um DTO de requisição para os testes
+        eventoRequestDTO = new EventoRequestDTO();
+        eventoRequestDTO.setTitulo("Test Evento");
+        eventoRequestDTO.setDescricao("Descrição do evento de teste");
+        eventoRequestDTO.setLocal("Test Local");
+        eventoRequestDTO.setDataHora(LocalDateTime.now().plusDays(1));
 
-        // Cria um objeto Evento de mock para ser usado nos testes
-        eventoMock = new Evento();
-        eventoMock.setId(1L);
-        eventoMock.setTitulo("Test Evento");
-        eventoMock.setLocal("Test Local");
-        // A data deve ser futura para passar na validação (embora o mock não execute a validação real)
-        eventoMock.setDataHora(LocalDateTime.now().plusDays(1)); 
+        // Cria um DTO de resposta para os testes
+        eventoResponseDTO = new EventoResponseDTO();
+        eventoResponseDTO.setId(1L);
+        eventoResponseDTO.setTitulo("Test Evento");
+        eventoResponseDTO.setDescricao("Descrição do evento de teste");
+        eventoResponseDTO.setLocal("Test Local");
+        eventoResponseDTO.setDataHora(LocalDateTime.now().plusDays(1));
     }
-
+    
+    
+    
     @Test
     public void deveRetornarStatus200AoListarEventos() {
         // ARRANGE
-        // Cria uma Page de Evento de mock
-        Page<Evento> eventoPage = new PageImpl<>(Collections.singletonList(eventoMock));
+        // Cria uma Page de EventoResponseDTO de mock
+        Page<EventoResponseDTO> eventoPage = new PageImpl<>(Collections.singletonList(eventoResponseDTO));
         
         // Define o comportamento esperado do Mockito:
-        // Quando o findAll() for chamado com qualquer PageRequest, retorne a Page de mock
-        when(eventoRepository.findAll(any(PageRequest.class))).thenReturn(eventoPage);
+        // Quando o listarTodos() for chamado com qualquer PageRequest, retorne a Page de mock
+        when(eventoService.listarTodos(any(PageRequest.class))).thenReturn(eventoPage);
 
         // ACT
-        ResponseEntity<Page<Evento>> response = eventoController.listar();
+        ResponseEntity<Page<EventoResponseDTO>> response = eventoController.listar();
 
         // ASSERT
         // Verifica se o status HTTP é OK (200)
         assertEquals(HttpStatus.OK, response.getStatusCode());
         // Verifica se o corpo da resposta não está vazio e contém o evento de mock
+        assertNotNull(response.getBody());
         assertEquals(1, response.getBody().getContent().size());
-        assertEquals(eventoMock.getTitulo(), response.getBody().getContent().get(0).getTitulo());
+        assertEquals(eventoResponseDTO.getTitulo(), response.getBody().getContent().get(0).getTitulo());
+        
+        // Verifica se o método listarTodos foi chamado
+        verify(eventoService, times(1)).listarTodos(any(PageRequest.class));
     }
-
+    
+    
+    
     @Test
     public void deveRetornarStatus200AoBuscarEventoPorId() {
         // ARRANGE
         Long eventoId = 1L;
         
         // Define o comportamento esperado do Mockito:
-        // Quando findById() for chamado com o ID 1L, retorne um Optional contendo o evento de mock
-        when(eventoRepository.findById(eventoId)).thenReturn(Optional.of(eventoMock));
+        // Quando buscarPorId() for chamado com o ID 1L, retorne um Optional contendo o DTO de resposta
+        when(eventoService.buscarPorId(eventoId)).thenReturn(Optional.of(eventoResponseDTO));
 
         // ACT
-        ResponseEntity<Evento> response = eventoController.buscar(eventoId);
+        ResponseEntity<EventoResponseDTO> response = eventoController.buscar(eventoId);
 
         // ASSERT
         // Verifica se o status HTTP é OK (200)
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        // Verifica se o corpo da resposta contém o evento de mock
-        assertEquals(eventoMock.getTitulo(), response.getBody().getTitulo());
+        // Verifica se o corpo da resposta contém o DTO de resposta
+        assertNotNull(response.getBody());
+        assertEquals(eventoResponseDTO.getTitulo(), response.getBody().getTitulo());
+        assertEquals(eventoResponseDTO.getId(), response.getBody().getId());
+        
+        // Verifica se o método buscarPorId foi chamado
+        verify(eventoService, times(1)).buscarPorId(eventoId);
     }
-
+    
+    
+    
     @Test
     public void deveRetornarStatus200AoCadastrarEvento() throws Exception {
         // ARRANGE
         // Define o comportamento esperado do Mockito:
-        // Quando save() for chamado com o evento de mock, retorne o próprio evento
-        when(eventoRepository.save(any(Evento.class))).thenReturn(eventoMock);
+        // Quando criar() for chamado com qualquer EventoRequestDTO, retorne o DTO de resposta
+        when(eventoService.criar(any(EventoRequestDTO.class))).thenReturn(eventoResponseDTO);
 
         // ACT
-        ResponseEntity<Evento> response = eventoController.cadastrar(eventoMock);
+        ResponseEntity<EventoResponseDTO> response = eventoController.cadastrar(eventoRequestDTO);
 
         // ASSERT
-        // Verifica se o status HTTP é OK (200)
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        // Verifica se o corpo da resposta contém o evento de mock
-        assertEquals(eventoMock.getTitulo(), response.getBody().getTitulo());
+        // Verifica se o status HTTP é CREATED (201)
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        // Verifica se o corpo da resposta contém o DTO de resposta
+        assertNotNull(response.getBody());
+        assertEquals(eventoResponseDTO.getTitulo(), response.getBody().getTitulo());
+        assertEquals(eventoResponseDTO.getId(), response.getBody().getId());
         
-        // Verifica se o método save foi realmente chamado no repositório Mock
-        Mockito.verify(eventoRepository, Mockito.times(1)).save(eventoMock);
+        // Verifica se o método criar() foi realmente chamado no serviço Mock
+        verify(eventoService, times(1)).criar(any(EventoRequestDTO.class));
     }
+    
 }

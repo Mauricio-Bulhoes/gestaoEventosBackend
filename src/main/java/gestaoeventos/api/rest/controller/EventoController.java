@@ -1,7 +1,5 @@
 package gestaoeventos.api.rest.controller;
 
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,64 +16,59 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import gestaoeventos.api.rest.model.Evento;
-import gestaoeventos.api.rest.repository.EventoRepository;
+import gestaoeventos.api.rest.dto.EventoRequestDTO;
+import gestaoeventos.api.rest.dto.EventoResponseDTO;
 import gestaoeventos.api.rest.service.EventoService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(value="/evento")
 public class EventoController {
 	
 	@Autowired
-	private EventoRepository eventoRepository;
-	
-	@Autowired
 	private EventoService eventoService;
 	
 	
-	public EventoController(EventoRepository repository) {
-        this.eventoRepository = repository;
-    }
 
     @GetMapping(value = "/GET/api/events", produces = "application/json")
-    public ResponseEntity<Page<Evento>> listar() {
+    public ResponseEntity<Page<EventoResponseDTO>> listar() {
     	PageRequest pageRequest = PageRequest.of(0, 5, Sort.by("titulo"));
-    	Page<Evento> list = eventoRepository.findAll(pageRequest);
-        return new ResponseEntity<Page<Evento>>(list, HttpStatus.OK);
+    	Page<EventoResponseDTO> list = eventoService.listarTodos(pageRequest);
+        return new ResponseEntity<Page<EventoResponseDTO>>(list, HttpStatus.OK);
     }
     
     @GetMapping(value = "/GET/api/events/{id}", produces = "application/json")
-    public ResponseEntity<Evento> buscar(@PathVariable (value = "id") Long id) {
-    	Optional<Evento> evento = eventoRepository.findById(id);
-        return new ResponseEntity<Evento>(evento.get(), HttpStatus.OK);
+    public ResponseEntity<EventoResponseDTO> buscar(@PathVariable (value = "id") Long id) {
+    	return eventoService.buscarPorId(id)
+                .map(evento -> ResponseEntity.status(HttpStatus.OK).body(evento))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping(value = "/POST/api/events", produces = "application/json")
-    public ResponseEntity<Evento> cadastrar(@RequestBody Evento evento) throws Exception {
-        Evento eventoSalvo = eventoRepository.save(evento);
-        return new ResponseEntity<Evento>(eventoSalvo, HttpStatus.OK);
+    public ResponseEntity<EventoResponseDTO> cadastrar(@Valid @RequestBody EventoRequestDTO eventoRequestDto) throws Exception {
+        EventoResponseDTO response = eventoService.criar(eventoRequestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/PUT/api/events/{id}")
-    public ResponseEntity<Evento> atualizar(@PathVariable Long id, @RequestBody Evento evento) {
-    	eventoRepository.findById(id);
-        evento.setId(id);
-        Evento eventoSalvo = eventoRepository.save(evento);
-        return new ResponseEntity<Evento>(eventoSalvo, HttpStatus.OK);
+    public ResponseEntity<EventoResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody EventoRequestDTO eventoRequestDto) {
+    	return eventoService.atualizar(id, eventoRequestDto)
+                .map(evento -> ResponseEntity.status(HttpStatus.OK).body(evento))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/DELETE/api/events/{id}")
-    public void excluir(@PathVariable Long id) {
-    	Optional<Evento> evento = eventoRepository.findById(id);
-    	evento.get().setDeleted(true);
-    	eventoRepository.save(evento.get());
-    	//eventoRepository.deleteById(id);
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    	boolean deletado = eventoService.excluir(id);
+        return deletado ? ResponseEntity.noContent().build() 
+                        : ResponseEntity.notFound().build();
     }
     
     @GetMapping(value = "/GET/api/events/buscarPorTitulo", produces = "application/json")
-    public ResponseEntity<Evento> buscarPorTitulo(@RequestParam (value = "titulo") String titulo) {
-    	Evento evento = eventoService.buscaEventoPorTitulo(titulo);
-    	return new ResponseEntity<Evento>(evento, HttpStatus.OK);
+    public ResponseEntity<EventoResponseDTO> buscarPorTitulo(@RequestParam (value = "titulo") String titulo) {
+    	return eventoService.buscaEventoPorTitulo(titulo)
+                .map(evento -> ResponseEntity.status(HttpStatus.OK).body(evento))
+                .orElse(ResponseEntity.notFound().build());
     }
 	
 }
