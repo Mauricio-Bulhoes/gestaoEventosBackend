@@ -61,7 +61,10 @@ public class EventoController {
 
     @DeleteMapping("/DELETE/api/events/{id}")
     public void excluir(@PathVariable Long id) {
-    	eventoRepository.deleteById(id);
+    	Optional<Evento> evento = eventoRepository.findById(id);
+    	evento.get().setDeleted(true);
+    	eventoRepository.save(evento.get());
+    	//eventoRepository.deleteById(id);
     }
 	
 }

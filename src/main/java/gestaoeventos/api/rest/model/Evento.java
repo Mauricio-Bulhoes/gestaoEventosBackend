@@ -14,8 +14,13 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+
 @Entity
 @Table(name = "eventos")
+@SQLDelete(sql = "UPDATE evento SET deleted = true WHERE id = ?")
+@Where(clause = "deleted = false")
 public class Evento implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
@@ -42,6 +47,9 @@ public class Evento implements Serializable {
     @NotBlank(message = "O local nao pode estar em branco")
     @Size(min = 1, max = 200, message = "O local deve ter entre {min} e {max} caracteres")
     private String local;
+    
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean deleted = false;
     
     
 
@@ -82,6 +90,14 @@ public class Evento implements Serializable {
 	}
 	public void setLocal(String local) {
 		this.local = local;
+	}
+	
+	
+	public boolean getDeleted() {
+		return deleted;
+	}
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
 	}
     
 }
