@@ -15,10 +15,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import gestaoeventos.api.rest.model.Evento;
 import gestaoeventos.api.rest.repository.EventoRepository;
+import gestaoeventos.api.rest.service.EventoService;
 
 @RestController
 @RequestMapping(value="/evento")
@@ -26,6 +28,9 @@ public class EventoController {
 	
 	@Autowired
 	private EventoRepository eventoRepository;
+	
+	@Autowired
+	private EventoService eventoService;
 	
 	
 	public EventoController(EventoRepository repository) {
@@ -65,6 +70,12 @@ public class EventoController {
     	evento.get().setDeleted(true);
     	eventoRepository.save(evento.get());
     	//eventoRepository.deleteById(id);
+    }
+    
+    @GetMapping(value = "/GET/api/events/buscarPorTitulo", produces = "application/json")
+    public ResponseEntity<Evento> buscarPorTitulo(@RequestParam (value = "titulo") String titulo) {
+    	Evento evento = eventoService.buscaEventoPorTitulo(titulo);
+    	return new ResponseEntity<Evento>(evento, HttpStatus.OK);
     }
 	
 }
