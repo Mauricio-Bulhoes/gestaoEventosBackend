@@ -10,7 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -24,20 +23,15 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class ControleExcecoes extends ResponseEntityExceptionHandler {
 	
 	/* Interceptar erros mais comuns no projeto */
-	@ExceptionHandler({Exception.class, RuntimeException.class, Throwable.class})
 	@Override
-	protected ResponseEntity<Object> handleExceptionInternal(Exception ex, @Nullable Object body, HttpHeaders headers,
+	protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers,
 			HttpStatusCode status, WebRequest request) {
 		
 		String msg = "";
+		List<ObjectError> list = ex.getBindingResult().getAllErrors();
 		
-		if (ex instanceof MethodArgumentNotValidException) {
-			List<ObjectError> list = ((MethodArgumentNotValidException) ex).getBindingResult().getAllErrors();
-			for (ObjectError objectError : list) {
-				msg += objectError.getDefaultMessage() + "\n";
-			}
-		}else {
-			msg = ex.getMessage();
+		for (ObjectError objectError : list) {
+			msg += objectError.getDefaultMessage() + "\n";
 		}
 		
 		ObjetoErro objetoErro = new ObjetoErro();
@@ -48,6 +42,18 @@ public class ControleExcecoes extends ResponseEntityExceptionHandler {
 	}
 	
 	
+	/* Tratamento de exceções gerais */
+	@ExceptionHandler({Exception.class, RuntimeException.class, Throwable.class})
+	public ResponseEntity<Object> handleGeneralException(Exception ex, WebRequest request) {
+		
+		ObjetoErro objetoErro = new ObjetoErro();
+		objetoErro.setError(ex.getMessage());
+		objetoErro.setCode(HttpStatus.INTERNAL_SERVER_ERROR.value() + " ==> " + HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+		
+		return new ResponseEntity<>(objetoErro, HttpStatus.INTERNAL_SERVER_ERROR);
+	}
+	
+	
 	/* Tratamento da maioria dos erros a nivel de banco de dados */
 	@ExceptionHandler({DataIntegrityViolationException.class, ConstraintViolationException.class, PSQLException.class, SQLException.class})
 	protected ResponseEntity<Object> handleExceptionDataIntegry(Exception ex) {
@@ -55,13 +61,13 @@ public class ControleExcecoes extends ResponseEntityExceptionHandler {
 		String msg = "";
 		
 		if (ex instanceof DataIntegrityViolationException) {
-			msg = ((DataIntegrityViolationException) ex).getCause().getCause().getMessage();
+			msg = ((DataIntegrityViolationException) ex).getMostSpecificCause().getMessage();
 		} else if (ex instanceof ConstraintViolationException) {
-			msg = ((ConstraintViolationException) ex).getCause().getCause().getMessage();
+			msg = ((ConstraintViolationException) ex).getSQLException().getMessage();
 		} else if (ex instanceof PSQLException) {
-			msg = ((PSQLException) ex).getCause().getCause().getMessage();
+			msg = ((PSQLException) ex).getMessage();
 		} else if (ex instanceof SQLException) {
-			msg = ((SQLException) ex).getCause().getCause().getMessage();
+			msg = ((SQLException) ex).getMessage();
 		} else {
 			msg = ex.getMessage(); /*Outras mensagens de erro*/
 		}

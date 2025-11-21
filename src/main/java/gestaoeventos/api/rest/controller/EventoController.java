@@ -19,10 +19,17 @@ import org.springframework.web.bind.annotation.RestController;
 import gestaoeventos.api.rest.dto.EventoRequestDTO;
 import gestaoeventos.api.rest.dto.EventoResponseDTO;
 import gestaoeventos.api.rest.service.EventoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(value="/evento")
+@Tag(name = "Eventos", description = "API para gerenciar eventos")
 public class EventoController {
 	
 	@Autowired
@@ -30,33 +37,66 @@ public class EventoController {
 	
 	
 
-    @GetMapping(value = "/GET/api/events", produces = "application/json")
+	@Operation(summary = "Listar Eventos", description = "Retorna uma lista paginada de eventos ordenados por título")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "Lista de eventos retornada com sucesso",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class)))
+	})
+	@GetMapping(value = "/GET/api/events", produces = "application/json")
     public ResponseEntity<Page<EventoResponseDTO>> listar() {
     	PageRequest pageRequest = PageRequest.of(0, 5, Sort.by("titulo"));
     	Page<EventoResponseDTO> list = eventoService.listarTodos(pageRequest);
         return new ResponseEntity<Page<EventoResponseDTO>>(list, HttpStatus.OK);
     }
+	
     
+	@Operation(summary = "Buscar evento por ID", description = "Retorna um evento específico pelo seu ID")
+    @ApiResponses(value = {
+    	@ApiResponse(responseCode = "200", description = "Evento encontrado",
+    		content = @Content(mediaType = "application/json", schema = @Schema(implementation = EventoResponseDTO.class))),
+    	@ApiResponse(responseCode = "404", description = "Evento não encontrado", content = @Content)
+    })
     @GetMapping(value = "/GET/api/events/{id}", produces = "application/json")
     public ResponseEntity<EventoResponseDTO> buscar(@PathVariable (value = "id") Long id) {
     	return eventoService.buscarPorId(id)
                 .map(evento -> ResponseEntity.status(HttpStatus.OK).body(evento))
                 .orElse(ResponseEntity.notFound().build());
     }
-
+	
+	
+	@Operation(summary = "Cadastrar novo evento", description = "Cria um novo evento no sistema")
+    @ApiResponses(value = {
+    	@ApiResponse(responseCode = "201", description = "Evento criado com sucesso",
+    		content = @Content(mediaType = "application/json", schema = @Schema(implementation = EventoResponseDTO.class))),
+    	@ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content)
+    })
     @PostMapping(value = "/POST/api/events", produces = "application/json")
     public ResponseEntity<EventoResponseDTO> cadastrar(@Valid @RequestBody EventoRequestDTO eventoRequestDto) throws Exception {
         EventoResponseDTO response = eventoService.criar(eventoRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
+	
+	
+	@Operation(summary = "Atualizar Evento", description = "Atualiza os dados de um evento específico")
+    @ApiResponses(value = {
+    	@ApiResponse(responseCode = "200", description = "Evento atualizado com sucesso",
+    		content = @Content(mediaType = "application/json", schema = @Schema(implementation = EventoResponseDTO.class))),
+    	@ApiResponse(responseCode = "404", description = "Evento não encontrado", content = @Content),
+    	@ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content)
+    })
     @PutMapping("/PUT/api/events/{id}")
     public ResponseEntity<EventoResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody EventoRequestDTO eventoRequestDto) {
     	return eventoService.atualizar(id, eventoRequestDto)
                 .map(evento -> ResponseEntity.status(HttpStatus.OK).body(evento))
                 .orElse(ResponseEntity.notFound().build());
     }
-
+	
+	
+	@Operation(summary = "Excluir Evento", description = "Realiza exclusão de um evento (feito com soft delete, não exclui fisicamente)")
+    @ApiResponses(value = {
+    	@ApiResponse(responseCode = "204", description = "Evento excluído com sucesso", content = @Content),
+    	@ApiResponse(responseCode = "404", description = "Evento não encontrado", content = @Content)
+    })
     @DeleteMapping("/DELETE/api/events/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
     	boolean deletado = eventoService.excluir(id);
@@ -64,6 +104,13 @@ public class EventoController {
                         : ResponseEntity.notFound().build();
     }
     
+	
+	@Operation(summary = "Buscar evento por título", description = "Busca um evento pelo título")
+    @ApiResponses(value = {
+    	@ApiResponse(responseCode = "200", description = "Evento encontrado",
+    		content = @Content(mediaType = "application/json", schema = @Schema(implementation = EventoResponseDTO.class))),
+    	@ApiResponse(responseCode = "404", description = "Evento não encontrado", content = @Content)
+    })
     @GetMapping(value = "/GET/api/events/buscarPorTitulo", produces = "application/json")
     public ResponseEntity<EventoResponseDTO> buscarPorTitulo(@RequestParam (value = "titulo") String titulo) {
     	return eventoService.buscaEventoPorTitulo(titulo)
