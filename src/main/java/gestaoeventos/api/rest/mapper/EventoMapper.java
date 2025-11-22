@@ -25,7 +25,9 @@ public class EventoMapper { //Esta classe é responsável por converter o DTO em
             evento.getTitulo(),
             evento.getDescricao(),
             evento.getDataHora(),
-            evento.getLocal()
+            evento.getLocal(),
+            evento.getCreatedAt(),
+            evento.getUpdatedAt()
         );
     }
     
@@ -35,6 +37,7 @@ public class EventoMapper { //Esta classe é responsável por converter o DTO em
         evento.setDescricao(dto.getDescricao());
         evento.setDataHora(dto.getDataHora());
         evento.setLocal(dto.getLocal());
+        // Aqui não precisamos setar created_at e updated_at, eles são gerenciados automaticamente
     }
     
     
