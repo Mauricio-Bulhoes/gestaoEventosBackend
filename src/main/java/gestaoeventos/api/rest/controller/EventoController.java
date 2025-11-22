@@ -43,8 +43,23 @@ public class EventoController {
 			content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class)))
 	})
 	@GetMapping(value = "/GET/api/events", produces = "application/json")
-    public ResponseEntity<Page<EventoResponseDTO>> listar() {
-    	PageRequest pageRequest = PageRequest.of(0, 5, Sort.by("titulo"));
+    public ResponseEntity<Page<EventoResponseDTO>> listar(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "dataHora,asc") String sort) {
+		
+		// Processa o parâmetro de ordenação
+	    String[] sortParams = sort.split(",");
+	    String sortField = sortParams[0];
+	    String sortDirection = sortParams.length > 1 ? sortParams[1] : "asc";
+	    
+	    // Define a direção da ordenação
+	    Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") 
+	        ? Sort.Direction.DESC 
+	        : Sort.Direction.ASC;
+		
+	    // Cria o PageRequest com os parâmetros recebidos
+	    PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, sortField));
     	Page<EventoResponseDTO> list = eventoService.listarTodos(pageRequest);
         return new ResponseEntity<Page<EventoResponseDTO>>(list, HttpStatus.OK);
     }

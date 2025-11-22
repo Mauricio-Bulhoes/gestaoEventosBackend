@@ -72,7 +72,7 @@ public class EventoControllerUnitTest {
         when(eventoService.listarTodos(any(PageRequest.class))).thenReturn(eventoPage);
 
         // ACT
-        ResponseEntity<Page<EventoResponseDTO>> response = eventoController.listar();
+        ResponseEntity<Page<EventoResponseDTO>> response = eventoController.listar(0, 5, "dataHora,asc");
 
         // ASSERT
         // Verifica se o status HTTP é OK (200)
