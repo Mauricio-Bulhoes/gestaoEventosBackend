@@ -2,6 +2,9 @@ package gestaoeventos.api.rest.model;
 
 import java.io.Serializable;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -19,7 +22,7 @@ import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "eventos")
-@SQLDelete(sql = "UPDATE evento SET deleted = true WHERE id = ?")
+@SQLDelete(sql = "UPDATE eventos SET deleted = true WHERE id = ?")
 @Where(clause = "deleted = false")
 public class Evento implements Serializable {
 	
@@ -36,7 +39,7 @@ public class Evento implements Serializable {
     private String titulo;
 
     @Column(length = 1000)
-    @Size(min = 1, max = 1000, message = "A descricao deve ter entre {min} e {max} caracteres")
+    @Size(max = 1000, message = "A descricao deve ter no maximo {max} caracteres")
     private String descricao;
 
     @Column(nullable = false)
@@ -50,6 +53,16 @@ public class Evento implements Serializable {
     
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean deleted = false;
+    
+    // CAMPOS DE AUDITORIA:
+    
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
     
     
 
@@ -98,6 +111,22 @@ public class Evento implements Serializable {
 	}
 	public void setDeleted(boolean deleted) {
 		this.deleted = deleted;
+	}
+	
+	
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+	
+	
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
 	}
     
 }
